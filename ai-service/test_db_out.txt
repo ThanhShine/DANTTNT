@@ -1,0 +1,32 @@
+﻿Total active products: 12
+=== Categories ===
+  [1] Äiá»‡n thoáº¡i & Tablet
+  [2] Laptop & MĂ¡y tĂ­nh
+  [3] Ă‚m thanh
+  [4] Phá»¥ kiá»‡n cĂ´ng nghá»‡
+  [5] Äá»“ng há»“ thĂ´ng minh
+  [6] Äiá»‡n thoáº¡i thĂ´ng minh
+  [7] MĂ¡y tĂ­nh báº£ng
+  [8] Laptop Gaming
+  [9] Laptop VÄƒn phĂ²ng
+  [10] Tai nghe
+  [11] Loa Bluetooth
+  [12] Sáº¡c & CĂ¡p
+  [13] á»p lÆ°ng & Bao da
+=== Sample Products ===
+  [1] cat_id=6 | iPhone 15 Pro Max 256GB
+  [2] cat_id=6 | Samsung Galaxy S24 Ultra 256GB
+  [3] cat_id=6 | Xiaomi 14 Ultra 512GB
+  [4] cat_id=6 | OPPO Find X7 Pro 256GB
+  [5] cat_id=8 | ASUS ROG Strix G16 2024 RTX 4070
+  [6] cat_id=9 | MacBook Air M3 15 inch
+  [7] cat_id=9 | Dell XPS 13 Plus Intel Evo
+  [8] cat_id=10 | Sony WH-1000XM5 Chá»‘ng á»“n
+  [9] cat_id=10 | Apple AirPods Pro 2nd Gen
+  [10] cat_id=11 | JBL Charge 5 Loa Bluetooth
+  [11] cat_id=5 | Apple Watch Series 9 45mm
+  [12] cat_id=5 | Samsung Galaxy Watch 6 Classic 47mm
+=== Search: tai nghe ===
+  [8] cat=Tai nghe | Sony WH-1000XM5 Chá»‘ng á»“n
+  [9] cat=Tai nghe | Apple AirPods Pro 2nd Gen
+OK

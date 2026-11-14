@@ -1,0 +1,16 @@
+﻿=== parse_intent('tai nghe') ===
+  intent: recommendation
+  category: tai nghe
+  category_db: headphone
+  brands: []
+  keywords: ['tai', 'nghe']
+
+=== Direct DB query ===
+Searching category: 'tai nghe', slug: 'headphone'
+Categories matched: [{'id': 10, 'name': 'Tai nghe', 'slug': 'tai-nghe'}]
+DB ERROR: 1054 (42S22): Unknown column 'p.discount_percent' in 'field list'
+
+=== parse_intent('dien thoai') ===
+  intent: recommendation
+  category: Ä‘iá»‡n thoáº¡i
+  category_db: smartphone

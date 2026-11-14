@@ -1,0 +1,52 @@
+# Virtual environments
+.venv/
+*/.venv/
+venv/
+*/venv/
+env/
+*/env/
+
+# Python cache
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*.py[cod]
+*$py.class
+
+# Node dependencies & builds
+node_modules/
+*/node_modules/
+dist/
+*/dist/
+.output/
+*/.output/
+
+# TypeScript build info
+*.tsbuildinfo
+*/tsconfig.tsbuildinfo
+*/tsconfig.node.tsbuildinfo
+
+# Uploads & temporary media
+uploads/*
+!uploads/.gitkeep
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+.env 
+node_modules/ 
+.venv/ 
+__pycache__/ 
+uploads/ 
+
+.env
+node_modules/
+.venv/
+__pycache__/
+uploads/
