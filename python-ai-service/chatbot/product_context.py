@@ -1,7 +1,7 @@
 """
 Product Context Builder Module
 Ensures the LLM ONLY answers based on REAL products from MySQL.
-Strictly prevents hallucinations and fabricated products.
+Strictly prevents hallucinations, fabricated products, and false "out of stock / not available" claims.
 """
 
 from typing import List, Dict, Any, Optional
@@ -16,22 +16,58 @@ def format_currency_vnd(amount: Any) -> str:
         return f"{amount} VNĐ"
 
 
-def build_product_context_text(products: List[Dict[str, Any]]) -> str:
+def build_product_context_text(
+    products: List[Dict[str, Any]],
+    intent_data: Optional[Dict[str, Any]] = None
+) -> str:
     """
     Format real products from MySQL into a clear, detailed context block for Qwen.
-    Qwen uses this context to cite exact prices, specifications, and stock status.
+    Explicitly flags whether exact matches were found so the LLM never claims a product is missing when it is right there.
     """
     if not products:
+        req_cat = intent_data.get("category") if intent_data else None
+        req_brand = intent_data.get("brand") if intent_data else None
+        detail_str = ""
+        if req_cat or req_brand:
+            detail_str = f" (Danh mục: {req_cat or 'bất kỳ'}, Thương hiệu: {req_brand or 'bất kỳ'})"
         return (
-            "THÔNG TIN SẢN PHẨM TRONG KHO:\n"
-            "Hiện tại hệ thống không tìm thấy sản phẩm nào phù hợp chính xác với yêu cầu của khách hàng.\n"
-            "Hãy thông báo lịch sự cho khách rằng cửa hàng chưa có mẫu này và gợi ý họ điều chỉnh tiêu chí (giá, thương hiệu, hoặc dòng máy)."
+            "TRẠNG THÁI TÌM KIẾM TRONG KHO: KHÔNG TÌM THẤY SẢN PHẨM PHÙ HỢP" + detail_str + ".\n"
+            "CHỈ ĐẠO BẮT BUỘC CHO AI:\n"
+            "- Hãy thông báo lịch sự rằng hiện tại cửa hàng chưa kinh doanh hoặc đang tạm hết dòng sản phẩm này.\n"
+            "- TUYỆT ĐỐI KHÔNG TỰ BỊA RA TÊN SẢN PHẨM, MODEL HOẶC GIÁ BÁN NÀO KHÔNG CÓ TRONG DANH SÁCH (ví dụ: không được tự nêu Acer Swift, Lenovo Ideapad, MacBook, Galaxy S24... khi danh sách trống).\n"
+            "- Gợi ý khách hàng tham khảo các dòng sản phẩm hiện có tại cửa hàng như: iPhone 15/16 series, Laptop Asus Vivobook / HP 240R / MSI Gaming Cyborg, Tai nghe AirPods 5 / Sony WH-1000XM6, Loa JBL Flip 7 / Marshall Emberton II, Sạc nhanh Anker / Samsung."
         )
 
-    context_lines = [
-        "DANH SÁCH SẢN PHẨM THỰC TẾ TRONG HỆ THỐNG CỦA CỬA HÀNG (CHỈ TƯ VẤN DỰA TRÊN DANH SÁCH NÀY, TUYỆT ĐỐI KHÔNG TỰ BỊA RA SẢN PHẨM KHÁC):",
-        "---"
-    ]
+    exact_matches = [p for p in products if p.get("match_type") == "exact_match"]
+    close_matches = [p for p in products if p.get("match_type") == "close_budget"]
+    alt_brand_matches = [p for p in products if p.get("match_type") == "alternative_brand"]
+
+    context_lines = []
+
+    if exact_matches:
+        exact_names = ", ".join(f"\"{p.get('name')}\"" for p in exact_matches)
+        context_lines.append(
+            f"✅ TRẠNG THÁI KHO HÀNG: TÌM THẤY {len(exact_matches)} SẢN PHẨM KHỚP CHÍNH XÁC YÊU CẦU CỦA KHÁCH HÀNG ({exact_names}) ĐANG CÓ SẴN TRONG CỬA HÀNG!\n"
+            f"⚠️ CHỈ ĐẠO BẮT BUỘC: Sản phẩm khách tìm ĐANG CÓ SẴN bên dưới. Bạn PHẢI khẳng định ngay từ câu đầu tiên là cửa hàng ĐANG CÓ SẴN sản phẩm này và tư vấn chi tiết. TUYỆT ĐỐI CẤM nói câu \"Hiện tại hệ thống chưa có sản phẩm...\" hoặc \"Cửa hàng không có...\"!"
+        )
+    elif alt_brand_matches:
+        req_brand = (intent_data or {}).get("brand") or "đó"
+        context_lines.append(
+            f"ℹ️ TRẠNG THÁI KHO HÀNG: Thương hiệu \"{req_brand}\" hiện chưa có mẫu trong danh mục này, nhưng cửa hàng ĐANG CÓ SẴN {len(products)} sản phẩm cùng loại rất tốt bên dưới để thay thế.\n"
+            f"⚠️ CHỈ ĐẠO BẮT BUỘC: Hãy thông báo nhẹ nhàng rằng thương hiệu {req_brand} hiện chưa có sẵn ở dòng này và giới thiệu ngay các mẫu thực tế bên dưới. TUYỆT ĐỐI KHÔNG tự bịa ra sản phẩm ngoài danh sách!"
+        )
+    elif close_matches:
+        context_lines.append(
+            f"ℹ️ TRẠNG THÁI KHO HÀNG: Tìm thấy {len(products)} sản phẩm thực tế trong kho có mức giá tiệm cận nhất với ngân sách của khách hàng.\n"
+            f"⚠️ CHỈ ĐẠO BẮT BUỘC: Hãy giới thiệu trực tiếp các sản phẩm trong danh sách bên dưới và nêu rõ mức giá thực tế của từng mẫu. TUYỆT ĐỐI KHÔNG tự bịa ra sản phẩm ngoài danh sách!"
+        )
+    else:
+        context_lines.append(
+            f"✅ TRẠNG THÁI KHO HÀNG: Đã lọc ra {len(products)} sản phẩm thực tế phù hợp nhất trong cửa hàng.\n"
+            f"⚠️ CHỈ ĐẠO BẮT BUỘC: CHỈ tư vấn dựa trên danh sách sản phẩm bên dưới, TUYỆT ĐỐI KHÔNG tự bịa ra sản phẩm khác!"
+        )
+
+    context_lines.append("---")
 
     for idx, p in enumerate(products, 1):
         pid = p.get("id")
@@ -39,13 +75,14 @@ def build_product_context_text(products: List[Dict[str, Any]]) -> str:
         brand = p.get("brand_name") or p.get("brand") or "Chính hãng"
         category = p.get("category_name") or p.get("category") or "Thiết bị"
         price = format_currency_vnd(p.get("price", 0))
-        old_price = format_currency_vnd(p.get("original_price")) if p.get("original_price") else None
+        old_price = format_currency_vnd(p.get("original_price") or p.get("base_price")) if (p.get("original_price") or p.get("base_price")) else None
         stock = p.get("stock_quantity", 0)
-        rating = p.get("rating_average") or p.get("rating", 5.0)
+        rating = p.get("rating_average") or p.get("rating") or p.get("avg_rating") or 5.0
         sold = p.get("total_sold", 0)
         desc = p.get("short_description") or p.get("description") or ""
+        match_note = p.get("match_note") or "SẢN PHẨM TRONG KHO"
 
-        stock_status = f"Còn {stock} sản phẩm trong kho" if stock > 0 else "ĐÃ HẾT HÀNG (tạm thời)"
+        stock_status = f"Còn {stock} sản phẩm trong kho (Sẵn hàng)" if stock > 0 else "ĐÃ HẾT HÀNG (tạm thời)"
 
         # Specifications formatting
         specs = p.get("specifications", {})
@@ -54,19 +91,20 @@ def build_product_context_text(products: List[Dict[str, Any]]) -> str:
             for k, v in specs.items():
                 if v:
                     spec_summary.append(f"{k}: {v}")
-        specs_str = "; ".join(spec_summary) if spec_summary else "Đang cập nhật"
+        specs_str = "; ".join(spec_summary) if spec_summary else "Xem trong mô tả nổi bật"
 
         card = [
-            f"[{idx}] ID: {pid} | TÊN: {name}",
-            f"   - Thương hiệu: {brand} | Danh mục: {category}",
-            f"   - Giá bán hiện tại: {price}" + (f" (Giá gốc: {old_price})" if old_price else ""),
+            f"[{idx}] TÊN SẢN PHẨM: {name}  --> [{match_note}]",
+            f"   - Mã ID: {pid} | Thương hiệu: {brand} | Danh mục: {category}",
+            f"   - Giá bán ưu đãi hiện tại: {price}" + (f" (Giá niêm yết: {old_price})" if old_price and old_price != price else ""),
             f"   - Tình trạng kho: {stock_status}",
             f"   - Đánh giá: {rating}/5⭐ | Đã bán: {sold}",
-            f"   - Thông số kỹ thuật: {specs_str}",
         ]
+        if spec_summary:
+            card.append(f"   - Thông số kỹ thuật: {specs_str}")
         if desc:
-            clean_desc = desc.replace("\n", " ")[:200]
-            card.append(f"   - Mô tả nổi bật: {clean_desc}")
+            clean_desc = desc.replace("\n", " ")[:280]
+            card.append(f"   - Đặc điểm & Cấu hình nổi bật: {clean_desc}")
 
         context_lines.append("\n".join(card))
         context_lines.append("---")

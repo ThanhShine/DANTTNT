@@ -168,10 +168,12 @@ async def process_chat_query(
 
     # 3. Query Candidates from MySQL
     category_slug = intent_data.get("category")
-    # Nếu câu hỏi hiện tại không có category nhưng preference summary có category -> bổ sung gợi ý
     candidates = query_products(category_slug=category_slug, limit=50)
+    # Fallback: nếu lọc SQL theo category quá chặt chưa ra ứng viên mà trong kho có sản phẩm liên quan theo từ khóa
+    if not candidates and (intent_data.get("product_keywords") or intent_data.get("brand")):
+        candidates = query_products(limit=50)
 
-    # 4. Recommendation Scoring với Personalized Memory
+    # 4. Recommendation Scoring với Personalized Memory & Smart Filtering
     recommended_products = recommend_products(
         candidates=candidates,
         intent_data=intent_data,
@@ -188,13 +190,15 @@ async def process_chat_query(
         user_memories=user_memories,
         preference_summary=preference_summary,
         user_interactions=user_interactions,
-        recommended_products=recommended_products
+        recommended_products=recommended_products,
+        intent_data=intent_data
     )
 
     system_prompt = build_system_prompt()
     llm_messages = prepare_personalized_llm_messages(
         personalized_context_text=personalized_context,
-        recent_chat_history=history
+        recent_chat_history=history,
+        current_request=clean_message
     )
 
     # 6. Call Local Ollama LLM Service

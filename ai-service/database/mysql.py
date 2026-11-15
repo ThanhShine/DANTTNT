@@ -88,13 +88,18 @@ def query_products(
         if only_in_stock:
             query += " AND p.so_luong_ton > 0"
 
-        # Lọc danh mục với mapping từ khóa linh hoạt
+        # Lọc danh mục với mapping từ khóa linh hoạt và chính xác theo từng loại thiết bị
         if cat_filter:
             category_mapping = {
-                "phone": ["dien-thoai", "điện thoại", "phone", "smartphone", "iphone", "galaxy", "xiaomi"],
-                "laptop": ["laptop", "máy tính", "notebook", "macbook"],
-                "tablet": ["tablet", "máy tính bảng", "ipad"],
-                "accessory": ["phụ kiện", "tai nghe", "loa", "sạc", "cáp", "chuột", "bàn phím", "đồng hồ", "dong-ho"]
+                "phone": ["dien-thoai", "điện thoại", "phone", "smartphone", "iphone", "galaxy"],
+                "laptop": ["laptop", "máy tính xách tay", "notebook", "macbook", "laptop-gaming", "laptop-van-phong", "laptop-may-tinh"],
+                "tablet": ["tablet", "máy tính bảng", "may-tinh-bang", "ipad"],
+                "headphone": ["tai nghe", "tai-nghe", "airpod", "wh1000", "chụp tai", "earbuds"],
+                "speaker": ["loa", "loa-bluetooth", "loa bluetooth", "jbl", "marshall", "emberton", "flip"],
+                "charger": ["sạc", "cáp", "sac-cap", "adapter", "anker", "type-c", "pd"],
+                "case": ["ốp lưng", "bao da", "op-lung-bao-da"],
+                "smartwatch": ["đồng hồ", "dong-ho-thong-minh", "smartwatch", "watch"],
+                "accessory": ["phụ kiện", "phu-kien", "tai nghe", "tai-nghe", "loa", "loa-bluetooth", "sạc", "cáp", "sac-cap", "chuột", "bàn phím", "đồng hồ", "dong-ho", "ốp lưng"]
             }
             mapped_terms = category_mapping.get(cat_filter.lower(), [cat_filter])
             cat_clauses = []

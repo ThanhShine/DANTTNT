@@ -280,14 +280,14 @@ export const sendMessage = async (req: Request, res: Response, next: NextFunctio
     }
 
     // 3. Lấy Context hội thoại từ chat_messages để AI hiểu ngữ cảnh (Section 5)
-    // Chỉ lấy lịch sử của session hiện tại, giới hạn 15 tin gần nhất
+    // Chỉ lấy lịch sử trước đó của session hiện tại (loại trừ tin nhắn vừa insert), giới hạn 14 tin gần nhất
     const contextRows = await query<RowDataPacket>(
       `SELECT sender_type, message
        FROM chat_messages
-       WHERE session_id = ?
+       WHERE session_id = ? AND id != ?
        ORDER BY created_at DESC
-       LIMIT 15`,
-      [session.id]
+       LIMIT 14`,
+      [session.id, userMsgResult.insertId]
     );
 
     // Format cho OpenAI / AI Service: role: 'user' | 'assistant'
@@ -588,20 +588,20 @@ export const postDirectChatMessage = async (req: Request, res: Response, next: N
     }
 
     // 2. Save user message into chat_messages
-    await execute(
+    const directUserMsgRes = await execute(
       `INSERT INTO chat_messages (session_id, sender_type, message, created_at)
        VALUES (?, 'user', ?, NOW())`,
       [session.id, trimmedUserMsg]
-    );
+    ) as ResultSetHeader;
 
-    // 3. Get history context
+    // 3. Get history context (excluding the newly inserted user message)
     const contextRows = await query<RowDataPacket>(
       `SELECT sender_type, message
        FROM chat_messages
-       WHERE session_id = ?
+       WHERE session_id = ? AND id != ?
        ORDER BY created_at DESC
-       LIMIT 15`,
-      [session.id]
+       LIMIT 14`,
+      [session.id, directUserMsgRes.insertId]
     );
 
     const conversationHistory = contextRows.reverse().map((r: RowDataPacket) => ({

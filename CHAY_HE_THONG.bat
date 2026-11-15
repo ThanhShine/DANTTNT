@@ -51,7 +51,7 @@ REM ============================================================
 
 echo [2/4] Khoi dong Python AI Service (Port 8000)...
 
-start "SalesAI - AI Service - Port 8000" /D "%~dp0ai-service" cmd /k "..\.venv\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000"
+start "SalesAI - AI Service - Port 8000" /D "%~dp0ai-service" cmd /k "..\.venv\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
 
 timeout /t 3 /nobreak > nul
 
